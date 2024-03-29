@@ -15,7 +15,15 @@
 #return value : Minimum number of tests needed in the worst case
 #               to find the solidity threshold of a window
 #Must return the answer as an int. 
+
+import math
+import sys
+
+
 def vitre(N, k):
+     # for k=2, the minimum tests needed is
+    x = math.ceil((-1+math.sqrt(8*N+1))/2)
+    
     
     return -1
 
@@ -25,6 +33,7 @@ def vitre(N, k):
 def main(args):
     N = int(args[0])
     k = int(args[1])
+ 
 
     answer = vitre(N,k)
     print(answer)
