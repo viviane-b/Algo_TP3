@@ -11,24 +11,7 @@
 using namespace std;
 
 vector<vector<int>> getTheNorthFace(const string filePath);
-int dijkstraClimbing(const vector<vector<int>>& wall);
-
-struct Node { // Node for djikstra
-    int row, col, difficulty;
-    Node(int x, int y, int d) {
-        row = x;
-        col = y;
-        difficulty = d;
-    }
-};
-
-//https://www.geeksforgeeks.org/custom-comparator-in-priority_queue-in-cpp-stl/
-struct CompareNodes { // min heap on difficulty (least diff 1st)
-    bool operator()(const Node& a, const Node& b) { // overload >
-        return a.difficulty > b.difficulty;
-    }
-};
-
+int ClimbingDP(const vector<vector<int>>& wall);
 
 vector<vector<int>> getTheNorthFace(const string filePath) {
     std::ifstream file(filePath);
@@ -60,7 +43,7 @@ int ClimbingDifficultyCalculator::CalculateClimbingDifficulty(const std::string 
     vector<vector<int>> wall = getTheNorthFace(filename);
     int minPathSum = -1;
     if(wall.size() != 0){
-        minPathSum = dijkstraClimbing(wall);
+        minPathSum = ClimbingDP(wall);
     }else{
         cout<< "Error, file is empty" << endl;
     }
@@ -68,42 +51,44 @@ int ClimbingDifficultyCalculator::CalculateClimbingDifficulty(const std::string 
     return minPathSum;
 }
 
-// Simplified Dijkstra
-int dijkstraClimbing(const std::vector<std::vector<int>>& wall) {
-    int rows = wall.size(), cols = wall[0].size(); // get rows + col sizes
-    vector<vector<int>> minDiff(rows, vector<int>(cols, 1e9)); //min difficulty vector init w/ big number
-    priority_queue<Node, vector<Node>, CompareNodes> pq; //priority queue (min difficulty)
+int ClimbingDP(const std::vector<std::vector<int>>& wall) {
+    int rows = wall.size(), cols = wall[0].size();
+    std::vector<std::vector<int>> dp(rows, std::vector<int>(cols, 1e9));
 
-    // Init pq w/ 1st row
+    // Init bottom row 
     for (int j = 0; j < cols; ++j) {
-        minDiff[rows - 1][j] = wall[rows - 1][j];
-        pq.emplace(rows - 1, j, wall[rows - 1][j]); //emplace directly constructs :https://en.cppreference.com/w/cpp/container/priority_queue/emplace
+        dp[rows - 1][j] = wall[rows - 1][j];
     }
 
-    // Dijkstra's algorithm
-    while (!pq.empty()) {
-        Node node = pq.top(); //Set node as ref top
-        pq.pop(); //pop top off
-
-        if (node.row == 0) { // Reached the top of the wall!
-            return node.difficulty;
-        }
-
-        // Check up, left, and right
-        vector<pair<int, int>> directions{{-1, 0}, {0, -1}, {0, 1}};// up, left, right use pair to seperate into row, col mapping
-        for (pair<int, int> dir : directions) {
-            int newRow = node.row + dir.first;
-            int newCol = node.col + dir.second;
-            if (newRow >= 0 && newCol >= 0 && newRow < rows && newCol < cols) {
-                int newDiff = node.difficulty + wall[newRow][newCol];
-                if (newDiff < minDiff[newRow][newCol]) { //new diff less than past? set
-                    minDiff[newRow][newCol] = newDiff;
-                    pq.emplace(newRow, newCol, newDiff);
-                }
+    // Fill the DP table from bottom to top
+    for (int i = rows - 2; i >= 0; --i) {
+        for (int j = 0; j < cols; ++j) {
+            // Difficulty of going up
+            dp[i][j] = wall[i][j] + dp[i + 1][j];
+            // Left (if within bounds) get min between current and left
+            if (j > 0){
+                dp[i][j] = min(dp[i][j], wall[i][j] + dp[i][j - 1]); //check if less than up
+            }
+            // Right (if within bounds) get min between current and right
+            if (j < cols - 1){
+                dp[i][j] = min(dp[i][j], wall[i][j] + dp[i][j + 1]); //check if less than up
             }
         }
+        // Check the min difficulty continuing left ->
+        for (int j = 1; j < cols; ++j) {
+            dp[i][j] = min(dp[i][j], dp[i][j - 1] + wall[i][j]);
+        }
+        // Check the min difficulty continuing right <-
+        for (int j = cols - 2; j >= 0; --j) {
+            dp[i][j] = min(dp[i][j], dp[i][j + 1] + wall[i][j]);
+        }
     }
 
-    // Error
-    return -1;
+    // Find the minimum difficulty from the top row
+    int minDifficulty = dp[0][0];
+    for (int j = 1; j < cols; ++j) {
+        minDifficulty = std::min(minDifficulty, dp[0][j]);
+    }
+
+    return minDifficulty;
 }
