@@ -1,10 +1,13 @@
+# Cassandre Hamel, 20210863
+# Viviane Binet, 20244728
+
 import sys
 import random
 
 cell_size = 10 #mm
 wall_height = 10 #mm
 wall_thickness = 1 #mm
-n = 4
+n = 10
 
 strategy_choice = 1
 
@@ -159,12 +162,92 @@ class Algorithm1(Strategy) :
         print (walls)
     
 
-
+# Wilson's Algorithm (Most pertinent sources, this took me all day (;-;))
+# source1: https://en.wikipedia.org/wiki/Loop-erased_random_walk
+# source2: https://professor-l.github.io/mazes/
+# source3: https://weblog.jamisbuck.org/2011/1/20/maze-generation-wilson-s-algorithm
+# source4: https://artofproblemsolving.com/community/c3090h2221709_wilsons_maze_generator_implementation
+# Generates a Uniform Spanning Tree (takes a random walk, and erases cycles created)
 class Algorithm2(Strategy) :
+    neighbors = []
+
+    def __init__(self):
+        super().__init__()
+        self.visited = [[False for _ in range(n)] for _ in range(n)] # nothing visited
+
+    
+    def random_walk(self, start):
+        path = [start] # start path at rand vertex
+        while not self.visited[path[-1][0]][path[-1][1]]: # while no cycle 
+            neighbours = self.get_neighbors(path[-1]) # get neighbors
+            next = random.choice(neighbours) #pick random neihbor
+            if next in path: # if it's in the path, cycle!
+                index = path.index(next) + 1
+                path = path[:index] # path = up to cycle to later remove
+            else:
+                path.append(next) # add it and continue, no cycle
+        return path
+
+
+
+    def get_neighbors(self, cell):
+        x, y = cell 
+        neighbors = []
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:  # up, down, left, right
+            nx, ny = x + dx, y + dy # neighbor = x or y + direction
+            if 0 <= nx < n and 0 <= ny < n: # in bounds
+                neighbors.append((nx, ny))  
+        return neighbors
+    
+
+
+    def create_labyrinth(self, path):
+        for i in range(len(path) - 1):
+            self.remove_wall(path[i], path[i + 1]) # check if the next cell is a neighbor (cycle), if so remove
+            self.cells[path[i][0]][path[i][1]] = 1  # add to maze
+            self.visited[path[i][0]][path[i][1]] = True 
+        # Mark last cell as visited and in maze
+        self.cells[path[-1][0]][path[-1][1]] = 1
+        self.visited[path[-1][0]][path[-1][1]] = True
+
+
+
+    def remove_wall(self, cell1, cell2):
+        x1, y1 = cell1
+        x2, y2 = cell2
+    
+        # Horizontal neighbors
+        if x1 == x2:
+            row = x1 + n -1
+            if y1 < y2: # c1 is left of c2
+                self.walls[row][y1] = 0 
+            else:
+                self.walls[row][y2] = 0
+
+        # Vertical neighbors
+        elif y1 == y2:
+            if x1 < x2: # c1 above c2
+                self.walls[x1][y1] = 0
+            else:
+                self.walls[x2][y2] = 0
+        
+
 
     def Apply(self):
-        #super().Apply()
+        super().Apply()
+        print(self.walls)
+    
         print("Applying Algorithm2")
+        start = (random.randint(0, n-1), random.randint(0, n-1)) # init start in maze and visited
+        self.cells[start[0]][start[1]] = 1
+        self.visited[start[0]][start[1]] = True
+
+        while any(not cell for row in self.visited for cell in row):  #  while there are unvisited cells in grid
+            unvisited = [(x, y) for x in range(n) for y in range(n) if not self.visited[x][y]] # list of all cells not in visited
+            start = random.choice(unvisited) #rand unvisited vertex
+            path = self.random_walk(start) #get a returned path from rand vertex
+            self.create_labyrinth(path)
+            
 
 class Generator() :
     strategy = None
