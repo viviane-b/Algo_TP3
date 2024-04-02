@@ -53,7 +53,7 @@ int ClimbingDifficultyCalculator::CalculateClimbingDifficulty(const std::string 
 
 int ClimbingDP(const std::vector<std::vector<int>>& wall) {
     int rows = wall.size(), cols = wall[0].size();
-    std::vector<std::vector<int>> dp(rows, std::vector<int>(cols, 1e9));
+    vector<vector<int>> dp(rows, vector<int>(cols, 1e9));
 
     // Init bottom row 
     for (int j = 0; j < cols; ++j) {
@@ -87,7 +87,7 @@ int ClimbingDP(const std::vector<std::vector<int>>& wall) {
     // Find the minimum difficulty from the top row
     int minDifficulty = dp[0][0];
     for (int j = 1; j < cols; ++j) {
-        minDifficulty = std::min(minDifficulty, dp[0][j]);
+        minDifficulty = min(minDifficulty, dp[0][j]);
     }
 
     return minDifficulty;
